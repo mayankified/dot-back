@@ -10,6 +10,8 @@ from langchain.chains import ConversationChain
 from fastapi.middleware.cors import CORSMiddleware
 import json
 import io
+import requests
+from bs4 import BeautifulSoup
 # Load environment variables
 load_dotenv()
 
@@ -251,3 +253,27 @@ async def analyze_medical_report(file: UploadFile = File(...)):
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+    
+    # Temporary storage for scraped data
+scraped_data = []
+
+# Function to scrape data
+def scrape_myths():
+    global scraped_data
+    url = 'https://www.medicalnewstoday.com/'
+    response = requests.get(url)
+    soup = BeautifulSoup(response.content, 'html.parser')
+    
+    myth_links = soup.find_all('a', class_='css-xqmvw1 css-i4o77u')
+    
+    scraped_data = []  # Clear old data
+    for myth in myth_links:
+        text = myth.get_text(strip=True)
+        link = myth.get('href')
+        scraped_data.append({"text": text, "link": link})
+
+# Route to scrape and store data
+@app.get("/scrape")
+def scrape():
+    scrape_myths()  
+    return {"myths": scraped_data}
