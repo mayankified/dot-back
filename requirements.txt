@@ -1,0 +1,8 @@
+fastapi
+uvicorn
+python-dotenv
+pydantic
+langchain-openai
+pillow
+json5
+langchain
