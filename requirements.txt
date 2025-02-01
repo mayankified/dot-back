@@ -6,3 +6,4 @@ langchain-openai
 pillow
 json5
 langchain
+pytesseract
