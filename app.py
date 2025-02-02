@@ -277,3 +277,45 @@ def scrape_myths():
 def scrape():
     scrape_myths()  
     return {"myths": scraped_data}
+
+from fastapi import FastAPI
+import joblib
+import pandas as pd
+from pydantic import BaseModel
+
+# Load the trained model and label encoders
+model = joblib.load("health_scheme_recommender.pkl")
+label_encoders = joblib.load("label_encoders.pkl")
+
+# Initialize FastAPI app
+
+# Define input schema
+class HealthSchemeInput(BaseModel):
+    age: int
+    income: int
+    employment_type: str
+    bank_account: str
+    socio_status: str
+    family_size: int
+
+# Define API endpoint
+@app.post("/recommend")
+def recommend_scheme(data: HealthSchemeInput):
+    # Convert input to DataFrame
+    input_data = pd.DataFrame([[
+        data.age, data.income, data.employment_type,
+        data.bank_account, data.socio_status, data.family_size
+    ]], columns=["Age", "Income", "Employment Type", "Bank Account", "Socio-Economic Status", "Family Size"])
+    
+    # Encode categorical features
+    input_data["Employment Type"] = label_encoders["Employment Type"].transform([data.employment_type])[0]
+    input_data["Bank Account"] = label_encoders["Bank Account"].transform([data.bank_account])[0]
+    input_data["Socio-Economic Status"] = label_encoders["Socio-Economic Status"].transform([data.socio_status])[0]
+    
+    # Predict scheme
+    scheme_index = model.predict(input_data)[0]
+    scheme = label_encoders["Recommended Scheme"].inverse_transform([scheme_index])[0]
+    
+    return {"Recommended Scheme": scheme}
+
+# Run API using: uvicorn filename:app --reload
